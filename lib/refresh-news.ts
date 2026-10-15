@@ -4,7 +4,8 @@ import { buscarYGuardarNoticias } from "./grok";
 import { newsConfig } from "./news-config";
 export async function refreshNews() {
   if (process.env.DEMO_MODE === "true") return { status: "demo", ...await refreshState() };
-  if (!process.env.XAI_API_KEY) throw new Error("Falta XAI_API_KEY");
+  // Sin clave de xAI la web sigue operativa con Supabase (lectura y reservas); solo se desactiva la búsqueda.
+  if (!process.env.XAI_API_KEY) return { status: "disabled", ...await refreshState() };
   // La espera se comparte entre el botón y el cron: nunca hay dos búsquedas seguidas.
   const token = await beginJob("news", newsConfig().cooldownSeconds);
   if (!token) return { status: "cached", ...await refreshState() };

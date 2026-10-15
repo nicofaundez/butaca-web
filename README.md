@@ -116,4 +116,8 @@ Se verificaron con el rol `service_role` las reservas exclusivas, la liberación
 
 Los asesores solo indicaron avisos informativos: [RLS sin políticas](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy), intencional porque el acceso se hace desde el servidor con `service_role`, y [índices aún sin uso](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index), esperable en una base nueva.
 
-La URL está configurada en `.env.local`. Falta añadir `SUPABASE_SECRET_KEY` desde el panel de Supabase; el conector solo permite obtener claves públicas. Mantener esa clave exclusivamente en el servidor. La demostración permanece activa hasta completar la conexión. Las búsquedas pagadas siguen pendientes de activación y de configurar `XAI_API_KEY`.
+~~La URL está configurada en `.env.local`. Falta añadir `SUPABASE_SECRET_KEY`…~~
+
+**Actualización 14 oct 2026:** `SUPABASE_SECRET_KEY` configurada en `.env.local` y `DEMO_MODE=false`. Verificado de punta a punta contra Supabase real con el servidor local: Basic Auth (401 sin credenciales), lectura de `noticias_cine` y `butaca_jobs`, reserva exclusiva (409 para otro navegador), liberación solo por el dueño, publicación definitiva y cron protegido por `CRON_SECRET` (generado). La fila de prueba se borró.
+
+Sin `XAI_API_KEY`, `/api/news/refresh` responde `status: "disabled"` y la interfaz lo indica; `/api/cron` responde 503 para que el fallo sea visible. Pendiente: `XAI_API_KEY` para activar las búsquedas pagadas, y despliegue en Vercel (copiar las variables de `.env.local` a Production y el mismo `CRON_SECRET` a los secretos de GitHub Actions).

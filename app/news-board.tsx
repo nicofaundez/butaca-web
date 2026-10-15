@@ -41,6 +41,7 @@ export function NewsBoard({ news: initialNews, total: initialTotal, demo, error:
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       if (body.status === "demo") setMessage("Demostración: no se realizan búsquedas reales. Las reservas de prueba se comparten mientras este servidor esté activo.");
+      else if (body.status === "disabled") setMessage("Búsqueda automática desactivada: falta configurar la clave de xAI en el servidor. Las noticias guardadas y las reservas funcionan con normalidad.");
       else if (body.status === "updated") {
         const parts = [`${body.insertadas} noticias nuevas`];
         if (body.duplicadas) parts.push(`${body.duplicadas} repetidas descartadas`);

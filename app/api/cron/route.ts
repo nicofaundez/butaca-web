@@ -10,7 +10,9 @@ export async function GET(request: Request) {
     return Response.json({ error: "No autorizado" }, { status: 401 });
   }
   try {
-    return Response.json({ ok: true, ...await refreshNews() }, { headers: { "Cache-Control": "no-store" } });
+    const result = await refreshNews();
+    if (result.status === "disabled") return Response.json({ error: "Falta XAI_API_KEY en el servidor" }, { status: 503 });
+    return Response.json({ ok: true, ...result }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Cron de BUTACA:", error instanceof Error ? error.message : "Error desconocido");
     return Response.json({ error: "No se pudo completar la búsqueda de noticias" }, { status: 500 });
