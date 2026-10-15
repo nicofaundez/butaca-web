@@ -73,16 +73,39 @@ export function NewsBoard({ news: initialNews, total: initialTotal, demo, error:
     return () => { clearInterval(poll); clearInterval(auto); document.removeEventListener("visibilitychange", focus); };
   }, [load, refresh]);
   async function claim(id: string, action: "take" | "release" | "publish") {
-    if (name.trim().length < 2) { setMessage("Indica tu nombre antes de tomar una noticia."); return; }
+    let activeName = name.trim();
+    if (action === "take" && activeName.length < 2) {
+      const prompted = window.prompt("¿Cuál es tu nombre o apodo para asignarte esta noticia? (Ej: Nicolás):");
+      if (!prompted || prompted.trim().length < 2) {
+        setMessage("Debes escribir tu nombre para poder tomar la noticia.");
+        return;
+      }
+      activeName = prompted.trim().slice(0, 60);
+      setName(activeName);
+      localStorage.setItem("butaca-name", activeName);
+    }
     setClaimBusy(true);
     try {
-      const response = await fetch("/api/news/claim", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action, name }) });
+      const response = await fetch("/api/news/claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action, name: activeName }),
+      });
       const body = await response.json();
       await load();
       if (!response.ok) throw new Error(body.error);
-      setMessage(action === "take" ? "Noticia reservada para ti." : action === "release" ? "La noticia vuelve a estar disponible." : "Marcada como publicada; no podrá volver a tomarse.");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo reservar"); }
-    finally { setClaimBusy(false); }
+      setMessage(
+        action === "take"
+          ? `Noticia reservada para ${activeName}.`
+          : action === "release"
+          ? "La noticia vuelve a estar disponible."
+          : "Marcada como publicada; no podrá volver a tomarse."
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo reservar");
+    } finally {
+      setClaimBusy(false);
+    }
   }
   const [category, setCategory] = useState("Todas");
   const [search, setSearch] = useState("");
@@ -100,7 +123,7 @@ export function NewsBoard({ news: initialNews, total: initialTotal, demo, error:
         <button className={tab === "sources" ? "active" : ""} onClick={() => setTab("sources")}>Fuentes</button>
         <button className={tab === "media" ? "active" : ""} onClick={() => setTab("media")}>Reels y frases</button>
       </nav>
-      <span className="team-tag"><span aria-hidden="true">●</span> SOLO EQUIPO</span>
+      <span className="team-tag"><span aria-hidden="true">●</span> {name ? `EQUIPO · ${name}` : "SOLO EQUIPO"}</span>
     </header>
     <main>
       <section className="hero">
@@ -115,7 +138,23 @@ export function NewsBoard({ news: initialNews, total: initialTotal, demo, error:
         <div className="section-heading"><div><p className="eyebrow">EN EL RADAR</p><h2 id="news-title">Últimas noticias<span className="count">{total || news.length}</span></h2></div>
           <button className="refresh" disabled={busy} onClick={() => void refresh()}>{busy ? "Buscando novedades…" : "Actualizar"} <span aria-hidden="true">↻</span></button>
         </div>
-        <div className="team-controls"><label>Tu nombre<input maxLength={60} value={name} placeholder="¿Quién toma la noticia?" onChange={(event) => { setName(event.target.value); localStorage.setItem("butaca-name", event.target.value); }} /></label><label>Estado<select value={status} onChange={(event) => setStatus(event.target.value)}>{["Todas", "Disponibles", "Mis noticias", "Publicadas"].map((item) => <option key={item}>{item}</option>)}</select></label><p>Última búsqueda completada:<br /><b>{lastUpdate ? new Date(lastUpdate).toLocaleString("es-CL", { timeZone: "America/Santiago" }) : demo ? "Modo demostración" : "Todavía sin actualización"}</b>{nextAllowed && Date.parse(nextAllowed) > Date.now() && <><br /><small>Próxima búsqueda disponible: {timeLabel(nextAllowed)}</small></>}</p></div>
+        <div className="team-controls">
+          <label style={{ flex: 1, minWidth: "220px" }}>
+            <span style={{ fontWeight: 600, color: "#facc15" }}>👤 Tu nombre de redactor:</span>
+            <input
+              maxLength={60}
+              value={name}
+              placeholder="¿Quién eres? (ej. Nicolás, Sofía...)"
+              style={{ borderColor: !name ? "#facc15" : undefined }}
+              onChange={(event) => {
+                setName(event.target.value);
+                localStorage.setItem("butaca-name", event.target.value);
+              }}
+            />
+          </label>
+          <label>Estado<select value={status} onChange={(event) => setStatus(event.target.value)}>{["Todas", "Disponibles", "Mis noticias", "Publicadas"].map((item) => <option key={item}>{item}</option>)}</select></label>
+          <p>Última búsqueda completada:<br /><b>{lastUpdate ? new Date(lastUpdate).toLocaleString("es-CL", { timeZone: "America/Santiago" }) : demo ? "Modo demostración" : "Todavía sin actualización"}</b>{nextAllowed && Date.parse(nextAllowed) > Date.now() && <><br /><small>Próxima búsqueda disponible: {timeLabel(nextAllowed)}</small></>}</p>
+        </div>
         <p className="sync-message" role="status">{message}</p>
         <div className="controls"><div className="filters" role="group" aria-label="Filtrar por categoría">
           {["Todas", ...categories].map((item) => <button key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
