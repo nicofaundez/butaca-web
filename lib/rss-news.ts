@@ -3,6 +3,7 @@ import { categories, type Category } from "./news-schema";
 import { dedupe, topicKey, type KnownNews } from "./dedup";
 import { newsConfig } from "./news-config";
 import { safeArticleUrl } from "./sources";
+import { translateToSpanish } from "./translate";
 
 export interface RssFeedSource {
   name: string;
@@ -183,13 +184,25 @@ export async function fetchFeedItems(feed: RssFeedSource): Promise<Array<{
         ? item.category.map((c: unknown) => typeof c === "object" && c ? (c as Record<string, unknown>)["#text"] || (c as Record<string, unknown>)["@_term"] : String(c))
         : item.category ? [String(item.category)] : [];
 
-      const categoria = categorizeItem(titulo, resumen, rawCats, feed.defaultCategory);
-      const tema_clave = topicKey(titulo);
+      let finalTitulo = titulo;
+      let finalResumen = resumen;
+
+      if (feed.lang === "en") {
+        try {
+          finalTitulo = await translateToSpanish(titulo);
+          finalResumen = await translateToSpanish(resumen);
+        } catch {
+          // Si la traducción falla se conserva el texto original
+        }
+      }
+
+      const categoria = categorizeItem(finalTitulo, finalResumen, rawCats, feed.defaultCategory);
+      const tema_clave = topicKey(finalTitulo);
       const imagen_url = extractImage(item, xml);
 
       results.push({
-        titulo,
-        resumen,
+        titulo: finalTitulo,
+        resumen: finalResumen,
         enlace,
         categoria,
         tema_clave,
