@@ -107,10 +107,30 @@ export function NewsBoard({ news: initialNews, total: initialTotal, demo, error:
       setClaimBusy(false);
     }
   }
+function detectFormat(item: { titulo: string; resumen: string }): "Película" | "Serie" | "Ambos" {
+  const text = `${item.titulo} ${item.resumen}`.toLowerCase();
+  const isSeries = /\b(serie|series|temporada|temporadas|episodio|episodios|cap[ií]tulo|cap[ií]tulos|miniserie|sitcom|showrunner|showrunners|spin-off|hulu|netflix|apple tv|hbo|max|prime video|chicago med|abbott elementary|breaking bad)\b/i.test(text);
+  const isMovie = /\b(pel[ií]cula|pel[ií]culas|film|films|movie|movies|cine|taquilla|box office|cartelera|largometraje|largometrajes|en salas|en cines|director|directora|oscar|oscars|hollywood)\b/i.test(text);
+  if (isSeries && !isMovie) return "Serie";
+  if (isMovie && !isSeries) return "Película";
+  if (isSeries && isMovie) return "Ambos";
+  return "Película";
+}
+
   const [category, setCategory] = useState("Todas");
+  const [format, setFormat] = useState<"Todos" | "Películas" | "Series">("Todos");
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"news" | "sources" | "media">("news");
-  const filtered = news.filter((item) => (status === "Todas" || (status === "Disponibles" && !item.tomada_por && !item.publicada) || (status === "Mis noticias" && item.mia) || (status === "Publicadas" && item.publicada)) && (category === "Todas" || item.categoria === category) && normalize(`${item.titulo} ${item.resumen} ${sourceName(item.enlace)}`).includes(normalize(search)));
+
+  const filtered = news.filter((item) => {
+    const statusMatch = status === "Todas" || (status === "Disponibles" && !item.tomada_por && !item.publicada) || (status === "Mis noticias" && item.mia) || (status === "Publicadas" && item.publicada);
+    const categoryMatch = category === "Todas" || item.categoria === category;
+    const itemFormat = detectFormat(item);
+    const formatMatch = format === "Todos" || itemFormat === (format === "Películas" ? "Película" : "Serie") || itemFormat === "Ambos";
+    const searchMatch = normalize(`${item.titulo} ${item.resumen} ${sourceName(item.enlace)}`).includes(normalize(search));
+    return statusMatch && categoryMatch && formatMatch && searchMatch;
+  });
+
   return <>
     <header className="site-header">
       <a href="/" className="brand" aria-label="La Butaca del Abuelo, inicio">
@@ -156,14 +176,35 @@ export function NewsBoard({ news: initialNews, total: initialTotal, demo, error:
           <p>Última búsqueda completada:<br /><b>{lastUpdate ? new Date(lastUpdate).toLocaleString("es-CL", { timeZone: "America/Santiago" }) : demo ? "Modo demostración" : "Todavía sin actualización"}</b>{nextAllowed && Date.parse(nextAllowed) > Date.now() && <><br /><small>Próxima búsqueda disponible: {timeLabel(nextAllowed)}</small></>}</p>
         </div>
         <p className="sync-message" role="status">{message}</p>
-        <div className="controls"><div className="filters" role="group" aria-label="Filtrar por categoría">
-          {["Todas", ...categories].map((item) => <button key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
-        </div><label className="search"><span className="sr-only">Buscar noticias</span><span aria-hidden="true">⌕</span><input type="search" placeholder="Buscar una historia…" value={search} onChange={(event) => setSearch(event.target.value)} /></label></div>
-        {error ? <div className="empty" role="alert"><h3>No pudimos cargar las noticias</h3><p>La conexión con la fuente de noticias no está disponible. Intenta actualizar en unos minutos.</p><a href="/">Volver a intentar →</a></div> : filtered.length === 0 ? <div className="empty"><h3>{news.length ? "No encontramos esa historia" : "La próxima historia está por llegar"}</h3><p>{news.length ? "Prueba otra búsqueda o categoría." : "Las noticias aparecerán aquí cuando se incorporen a la selección del equipo."}</p>{news.length > 0 && <button onClick={() => { setSearch(""); setCategory("Todas"); }}>Limpiar filtros</button>}</div> : <div className="news-grid">
+        <div className="controls">
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+            <div className="filters" role="group" aria-label="Filtrar por formato">
+              {(["Todos", "Películas", "Series"] as const).map((fmt) => (
+                <button key={fmt} aria-pressed={format === fmt} onClick={() => setFormat(fmt)}>
+                  {fmt === "Todos" ? "Todo" : fmt === "Películas" ? "🎬 Películas" : "📺 Series"}
+                </button>
+              ))}
+            </div>
+            <div className="filters" role="group" aria-label="Filtrar por categoría">
+              {["Todas", ...categories].map((item) => <button key={item} aria-pressed={category === item} onClick={() => setCategory(item)}>{item}</button>)}
+            </div>
+          </div>
+          <label className="search"><span className="sr-only">Buscar noticias</span><span aria-hidden="true">⌕</span><input type="search" placeholder="Buscar una historia…" value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+        </div>
+        {error ? <div className="empty" role="alert"><h3>No pudimos cargar las noticias</h3><p>La conexión con la fuente de noticias no está disponible. Intenta actualizar en unos minutos.</p><a href="/">Volver a intentar →</a></div> : filtered.length === 0 ? <div className="empty"><h3>{news.length ? "No encontramos esa historia" : "La próxima historia está por llegar"}</h3><p>{news.length ? "Prueba otra búsqueda o categoría." : "Las noticias aparecerán aquí cuando se incorporen a la selección del equipo."}</p>{news.length > 0 && <button onClick={() => { setSearch(""); setCategory("Todas"); setFormat("Todos"); }}>Limpiar filtros</button>}</div> : <div className="news-grid">
           {filtered.map((item, index) => {
             const url = safeArticleUrl(item.enlace);
+            const detected = detectFormat(item);
             return <article className={`news-card category-${categories.indexOf(item.categoria)}`} key={item.id}>
-              <div className="card-top"><span className="category">{item.categoria}</span><span className="card-index">{String(index + 1).padStart(2, "0")}</span></div>
+              <div className="card-top">
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <span className="category">{item.categoria}</span>
+                  <span style={{ fontSize: "11px", color: "var(--muted)", background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: "10px" }}>
+                    {detected === "Serie" ? "📺 Serie" : "🎬 Película"}
+                  </span>
+                </div>
+                <span className="card-index">{String(index + 1).padStart(2, "0")}</span>
+              </div>
               {item.imagen_url && safeArticleUrl(item.imagen_url)?.protocol === "https:" && <img className="article-image" src={item.imagen_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = "none"; }} />}
               <div className="card-body"><div className="meta"><span>{demo ? "EJEMPLO EDITORIAL" : sourceName(item.enlace)}</span><time dateTime={item.fecha_creacion}>{dateLabel(item.fecha_creacion)}</time></div>
                 <h3>{item.titulo}</h3><p>{item.resumen}</p></div>
