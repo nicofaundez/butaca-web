@@ -1,0 +1,23 @@
+# Actualiza las noticias varias veces al día sin pagar Vercel Pro.
+# Configurar en GitHub → Settings → Secrets and variables → Actions:
+#   BUTACA_URL  = https://tu-proyecto.vercel.app   (sin barra final)
+#   CRON_SECRET = el mismo valor que en Vercel
+name: Noticias BUTACA
+on:
+  schedule:
+    # Cada 4 horas (hora UTC). GitHub puede retrasar la ejecución unos minutos.
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Llamar a /api/cron
+        env:
+          BUTACA_URL: ${{ secrets.BUTACA_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body -sS --max-time 200 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$BUTACA_URL/api/cron"

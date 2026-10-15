@@ -1,0 +1,10 @@
+import type { News } from "./news-schema";
+// Ejemplos editoriales ficticios. Nunca se insertan en la base de datos.
+export const demoNews: News[] = [
+  { id: "demo-1", titulo: "Las historias que nos llevarán de vuelta al cine", resumen: "Una mirada a los estrenos, las nuevas voces y las películas que queremos descubrir en pantalla grande. Esta tarjeta es un ejemplo de diseño, no una noticia real.", categoria: "Estrenos", enlace: "https://variety.com", fecha_creacion: "2026-10-13T10:00:00Z" },
+  { id: "demo-2", titulo: "Detrás de la alfombra roja", resumen: "Conversaciones, protagonistas y el otro lado de las grandes noches de Hollywood. Contenido ficticio para previsualizar la página.", categoria: "Farándula", enlace: "https://www.hollywoodreporter.com", fecha_creacion: "2026-10-13T09:00:00Z" },
+  { id: "demo-3", titulo: "Hay películas que nunca terminan", resumen: "Un espacio para recordar las escenas, los autores y los aniversarios que forman parte de nuestra memoria cinéfila. Ejemplo editorial.", categoria: "Efemérides", enlace: "https://www.empireonline.com", fecha_creacion: "2026-10-13T08:00:00Z" },
+  { id: "demo-4", titulo: "Lo que está moviendo la conversación", resumen: "Aquí encontrarás novedades de la industria contrastadas con las fuentes del equipo. Esta noticia es de demostración.", categoria: "Breaking News", enlace: "https://deadline.com", fecha_creacion: "2026-10-12T17:00:00Z" },
+  { id: "demo-5", titulo: "Una nueva generación detrás de cámara", resumen: "El cine independiente también tiene su lugar en nuestra selección editorial. Contenido de ejemplo, sin anuncio real asociado.", categoria: "Estrenos", enlace: "https://www.indiewire.com", fecha_creacion: "2026-10-12T16:00:00Z" },
+  { id: "demo-6", titulo: "El arte de volver a mirar", resumen: "Historias que invitan a revisitar las películas que nos hicieron amar el cine. Tarjeta de demostración para el equipo.", categoria: "Efemérides", enlace: "https://www.sensacine.com", fecha_creacion: "2026-10-12T15:00:00Z" },
+];
